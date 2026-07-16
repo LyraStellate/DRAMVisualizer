@@ -1,0 +1,26 @@
+[package]
+name = "dram-visualizer-core"
+version = "0.1.0"
+edition = "2024"
+
+[lib]
+# Keeps the integration tests' `use dram_visualizer_lib::...` compiling
+# unchanged, and names the wasm-bindgen output (wasm/pkg/dram_visualizer_lib.js).
+name = "dram_visualizer_lib"
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+serde = { version = "1", features = ["derive"] }
+# Must match the wasm-bindgen-cli version provided by the Nix dev shell
+# (flake.nix); the CLI refuses to process a mismatched crate version.
+wasm-bindgen = "=0.2.121"
+serde-wasm-bindgen = "0.6"
+
+[target.'cfg(target_arch = "wasm32")'.dependencies]
+# Routes panic messages (with stack traces) to the browser console instead of
+# an unreadable "unreachable executed" trap.
+console_error_panic_hook = "0.1"
+
+[profile.release]
+lto = true
+opt-level = 3
