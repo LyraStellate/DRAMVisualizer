@@ -1,14 +1,14 @@
-import { Box, TextField, Typography } from "@mui/material";
 import {
   AddressFunction,
   DRAMStructure,
   DRAMStructures,
 } from "../../../shared/types/dram";
 import { getBit } from "../../../shared/utils/parsing";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 
 interface Props {
   dramStructures: DRAMStructures;
-  /** Mask input string per structure per target bit (controlled). */
   value: Record<DRAMStructure, string[]>;
   onChange: (
     dramStructure: DRAMStructure,
@@ -17,10 +17,6 @@ interface Props {
   ) => void;
 }
 
-/**
- * Parses an address-bit mask ("0x14", "0b10100", "20", "_" separators
- * allowed). Returns null for invalid input or bits beyond address bit 63.
- */
 const parseMask = (value: string): bigint | null => {
   const s = value.trim().replace(/_/g, "");
   if (s === "") return 0n;
@@ -34,7 +30,6 @@ const parseMask = (value: string): bigint | null => {
   return mask;
 };
 
-/** Set-bit positions of the mask, ascending (0x14 -> [2, 4]). */
 const maskToSelectedBits = (mask: bigint): number[] => {
   const bits: number[] = [];
   for (let pos = 0; mask > 0n; pos++, mask >>= 1n) {
@@ -62,7 +57,7 @@ export const AddresMappingInputForm = ({
   };
 
   return (
-    <>
+    <div className="flex flex-col gap-4 mt-2">
       {(Object.keys(dramStructures) as Array<keyof DRAMStructures>).map(
         (key) => {
           const structureValue = dramStructures[key];
@@ -73,50 +68,48 @@ export const AddresMappingInputForm = ({
           }
 
           return (
-            <Box key={key}>
-              <Typography variant="h6" component="h3">
-                {key}
-              </Typography>
+            <div key={key} className="flex flex-col gap-2 p-3 bg-muted/30 rounded-md border border-border">
+              <h4 className="text-sm font-semibold capitalize text-foreground">{key}</h4>
 
-              {Array.from({ length: bits }, (_, index) => {
-                const raw = value[key]?.[index] || "";
-                const mask = parseMask(raw);
-                const invalid = mask === null;
-                return (
-                  <Box key={`${key}-nbit-${index}`}>
-                    <Typography
-                      variant="body2"
-                      component="label"
-                      htmlFor={`${key}-nbit-input-${index}`}
-                    >
-                      {key}[{index}]
-                    </Typography>
-                    <TextField
-                      type="text"
-                      placeholder="mask, e.g. 0x14"
-                      id={`${key}-nbit-input-${index}`}
-                      value={raw}
-                      onChange={(e) =>
-                        handleSetAddressMapping(key, index, e.target.value)
-                      }
-                      error={invalid}
-                      helperText={
-                        invalid
-                          ? "invalid mask"
-                          : mask > 0n
-                            ? `bits: ${maskToSelectedBits(mask).join(",")}`
-                            : " "
-                      }
-                      variant="outlined"
-                      size="small"
-                    />
-                  </Box>
-                );
-              })}
-            </Box>
+              <div className="grid grid-cols-1 gap-2">
+                {Array.from({ length: bits }, (_, index) => {
+                  const raw = value[key]?.[index] || "";
+                  const mask = parseMask(raw);
+                  const invalid = mask === null;
+                  return (
+                    <div key={`${key}-nbit-${index}`} className="flex items-center gap-2">
+                      <Label
+                        htmlFor={`${key}-nbit-input-${index}`}
+                        className="w-16 text-xs text-muted-foreground shrink-0 text-right"
+                      >
+                        {key}[{index}]
+                      </Label>
+                      <div className="flex-1">
+                        <Input
+                          type="text"
+                          placeholder="e.g. 0x14"
+                          id={`${key}-nbit-input-${index}`}
+                          value={raw}
+                          onChange={(e) =>
+                            handleSetAddressMapping(key, index, e.target.value)
+                          }
+                          className={`h-8 text-sm ${invalid ? "border-destructive" : ""}`}
+                        />
+                        {invalid && <p className="text-[10px] text-destructive mt-0.5">invalid mask</p>}
+                        {!invalid && mask > 0n && (
+                          <p className="text-[10px] text-muted-foreground mt-0.5">
+                            bits: {maskToSelectedBits(mask).join(",")}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
           );
         }
       )}
-    </>
+    </div>
   );
 };

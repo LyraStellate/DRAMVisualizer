@@ -1,13 +1,4 @@
 import { useState } from "react";
-import {
-  Accordion,
-  AccordionDetails,
-  AccordionSummary,
-  Box,
-  Button,
-  Paper,
-  Typography,
-} from "@mui/material";
 import { useDRAMConfigDispatch } from "../../shared/context/DRAMConfigContext";
 import { TotalCapacityInputForm } from "./components/TotalCapacityInputForm";
 import {
@@ -30,6 +21,7 @@ import {
   DEFAULT_DRAM_STRUCTURES,
   DEFAULT_TOTAL_CAPACITY,
 } from "./defaults";
+import { Button } from "@/components/ui/button";
 
 export const ConfigurationPanel = () => {
   const [totalCapacity, setTotalCapacity] = useState<number>(
@@ -55,7 +47,6 @@ export const ConfigurationPanel = () => {
     value: string
   ) => {
     const num = parseInt(value, 10);
-    // The form only commits powers of two; guard anyway.
     if (!isPowerOfTwo(num)) {
       return;
     }
@@ -63,8 +54,6 @@ export const ConfigurationPanel = () => {
     const newStructures = { ...dramStructures, [key]: num };
     setDRAMStructures(newStructures);
 
-    // A changed DRAM shape invalidates the current address mapping, so
-    // regenerate a fresh linear mapping from the new structure counts.
     const linear = buildLinearMapping(newStructures);
     setAddressMapping(linear.mapping);
     setMaskInputs(linear.masks);
@@ -87,7 +76,6 @@ export const ConfigurationPanel = () => {
     });
   };
 
-  // DRAM configuration (device properties): drives the Memory Map layout.
   const handleDramConfigApply = () => {
     dramDispatch.applyDramConfig({
       TotalCapacity: totalCapacity,
@@ -95,7 +83,6 @@ export const ConfigurationPanel = () => {
     });
   };
 
-  // Memory controller configuration: builds the address decoder in WASM.
   const handleMemoryControllerApply = async () => {
     try {
       console.log("Setting up memory controller with mapping:", addressMapping);
@@ -107,61 +94,42 @@ export const ConfigurationPanel = () => {
   };
 
   return (
-    <Paper>
-      <Box>
-        <Accordion>
-          <AccordionSummary>
-            <Typography variant="h6" component="h2" gutterBottom>
-              DRAM Configuration
-            </Typography>
-          </AccordionSummary>
-          <AccordionDetails>
-            <Box>
-              <Typography fontWeight="medium">DRAM Size</Typography>
-              <TotalCapacityInputForm onChange={handleTotalCapacityUpdate} />
-            </Box>
-            <Box>
-              <Typography fontWeight="medium">DRAM Structure</Typography>
-              <DRAMStructuresInputForm
-                value={dramStructures}
-                onChange={handleDRAMStructuresChange}
-              />
-              <CheckPanel
-                dramStructures={dramStructures}
-                totalCapacity={totalCapacity}
-              />
-            </Box>
-            <Box>
-              <Button onClick={handleDramConfigApply}>
-                Apply DRAM Configuration
-              </Button>
-            </Box>
-          </AccordionDetails>
-        </Accordion>
+    <div className="h-full w-full flex flex-col overflow-y-auto custom-scrollbar">
+      <div className="p-4 border-b border-border">
+        <h2 className="text-lg font-bold mb-4">DRAM Configuration</h2>
+        <div className="flex flex-col gap-4">
+          <TotalCapacityInputForm onChange={handleTotalCapacityUpdate} />
+          <DRAMStructuresInputForm
+            value={dramStructures}
+            onChange={handleDRAMStructuresChange}
+          />
+          <CheckPanel
+            dramStructures={dramStructures}
+            totalCapacity={totalCapacity}
+          />
+          <Button onClick={handleDramConfigApply} className="w-full mt-2">
+            Apply DRAM Configuration
+          </Button>
+        </div>
+      </div>
 
-        <Accordion>
-          <AccordionSummary>
-            <Typography variant="h6" component="h2" gutterBottom>
-              Memory Controller Configuration
-            </Typography>
-          </AccordionSummary>
-          <AccordionDetails>
-            <Box>
-              <Typography fontWeight="medium">Address Mapping</Typography>
-              <AddresMappingInputForm
-                dramStructures={dramStructures}
-                value={maskInputs}
-                onChange={handleAddressMappingChange}
-              />
-            </Box>
-            <Box>
-              <Button onClick={handleMemoryControllerApply}>
-                Apply Memory Controller Configuration
-              </Button>
-            </Box>
-          </AccordionDetails>
-        </Accordion>
-      </Box>
-    </Paper>
+      <div className="p-4 pb-8">
+        <h2 className="text-lg font-bold mb-4">Memory Controller Config</h2>
+        <div className="flex flex-col gap-4">
+          <AddresMappingInputForm
+            dramStructures={dramStructures}
+            value={maskInputs}
+            onChange={handleAddressMappingChange}
+          />
+          <Button
+            onClick={handleMemoryControllerApply}
+            className="w-full mt-2"
+            variant="secondary"
+          >
+            Apply Memory Controller Config
+          </Button>
+        </div>
+      </div>
+    </div>
   );
 };

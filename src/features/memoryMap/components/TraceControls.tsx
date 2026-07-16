@@ -5,29 +5,15 @@ import {
   useRef,
   useState,
 } from "react";
-import {
-  Alert,
-  Box,
-  Button,
-  Collapse,
-  IconButton,
-  Slider,
-  Stack,
-  TextField,
-  Tooltip,
-  Typography,
-} from "@mui/material";
-import UploadFileIcon from "@mui/icons-material/UploadFile";
-import EditNoteIcon from "@mui/icons-material/EditNote";
-import SkipNextIcon from "@mui/icons-material/SkipNext";
-import PlayArrowIcon from "@mui/icons-material/PlayArrow";
-import PauseIcon from "@mui/icons-material/Pause";
-import RestartAltIcon from "@mui/icons-material/RestartAlt";
+import { Upload, FileEdit, StepForward, Play, Pause, RotateCcw } from "lucide-react";
 import { invoke } from "../../../shared/backend";
 import { HIERARCHY_ORDER } from "../../../shared/constants/dram";
 import { DecodedAccess, TraceSummary } from "../../../shared/types/trace";
 import { TraceClient } from "../engine/TraceClient";
 import { VisualizerEngine } from "../engine/VisualizerEngine";
+import { Button } from "@/components/ui/button";
+import { Slider } from "@/components/ui/slider";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 interface Props {
   engine: VisualizerEngine | null;
@@ -127,8 +113,8 @@ export const TraceControls = ({ engine }: Props) => {
   const atEnd = summary !== null && cursor >= summary.total;
 
   return (
-    <Stack spacing={1}>
-      <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap" useFlexGap>
+    <div className="flex flex-col gap-2">
+      <div className="flex flex-row items-center flex-wrap gap-2">
         <input
           ref={fileInputRef}
           type="file"
@@ -137,117 +123,113 @@ export const TraceControls = ({ engine }: Props) => {
           onChange={onFileChange}
         />
         <Button
-          size="small"
-          variant="outlined"
-          startIcon={<UploadFileIcon />}
+          variant="outline"
+          size="sm"
           disabled={loading}
           onClick={() => fileInputRef.current?.click()}
         >
+          <Upload className="w-4 h-4 mr-2" />
           Load file
         </Button>
         <Button
-          size="small"
-          variant="outlined"
-          startIcon={<EditNoteIcon />}
+          variant="outline"
+          size="sm"
           onClick={() => setPasteOpen((open) => !open)}
         >
+          <FileEdit className="w-4 h-4 mr-2" />
           Paste
         </Button>
-        <Tooltip title="Step one access">
-          <span>
-            <IconButton
-              size="small"
-              disabled={!hasTrace || atEnd || loading}
-              onClick={() => void step()}
-            >
-              <SkipNextIcon />
-            </IconButton>
-          </span>
-        </Tooltip>
-        <Tooltip title={playing ? "Pause" : "Play"}>
-          <span>
-            <IconButton
-              size="small"
-              disabled={!hasTrace || atEnd}
-              onClick={() => setPlaying((p) => !p)}
-            >
-              {playing ? <PauseIcon /> : <PlayArrowIcon />}
-            </IconButton>
-          </span>
-        </Tooltip>
-        <Tooltip title="Reset">
-          <span>
-            <IconButton size="small" disabled={!hasTrace} onClick={reset}>
-              <RestartAltIcon />
-            </IconButton>
-          </span>
-        </Tooltip>
-        <Box sx={{ width: 120, px: 1 }}>
+        
+        <Button
+          variant="outline"
+          size="icon"
+          title="Step one access"
+          disabled={!hasTrace || atEnd || loading}
+          onClick={() => void step()}
+        >
+          <StepForward className="w-4 h-4" />
+        </Button>
+        <Button
+          variant="outline"
+          size="icon"
+          title={playing ? "Pause" : "Play"}
+          disabled={!hasTrace || atEnd}
+          onClick={() => setPlaying((p) => !p)}
+        >
+          {playing ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
+        </Button>
+        <Button
+          variant="outline"
+          size="icon"
+          title="Reset"
+          disabled={!hasTrace}
+          onClick={reset}
+        >
+          <RotateCcw className="w-4 h-4" />
+        </Button>
+
+        <div className="flex items-center gap-2 w-32 px-2">
           <Slider
-            size="small"
             min={50}
             max={2000}
             step={50}
-            value={intervalMs}
-            onChange={(_, value) => setIntervalMs(value as number)}
-            valueLabelDisplay="auto"
-            valueLabelFormat={(v) => `${v} ms`}
+            value={[intervalMs]}
+            onValueChange={(val) => setIntervalMs(val[0])}
           />
-        </Box>
-        <Typography variant="body2" sx={{ fontVariantNumeric: "tabular-nums" }}>
+          <span className="text-xs text-muted-foreground w-12 text-right">
+            {intervalMs}ms
+          </span>
+        </div>
+
+        <span className="text-sm font-mono text-muted-foreground">
           {summary
             ? `${cursor.toLocaleString()} / ${summary.total.toLocaleString()}`
             : "no trace loaded"}
-        </Typography>
+        </span>
+
         {current && (
-          <>
-            <Typography variant="body2" sx={{ fontFamily: "monospace" }}>
-              {current.addrHex}
-            </Typography>
-            <Typography variant="body2" color="text.secondary">
+          <div className="flex items-center gap-2 text-sm">
+            <span className="font-mono font-medium">{current.addrHex}</span>
+            <span className="text-muted-foreground text-xs">
               {current.path
                 .map((index, level) => `${HIERARCHY_ORDER[level]} ${index}`)
                 .join(" › ")}
-            </Typography>
-          </>
+            </span>
+          </div>
         )}
-      </Stack>
+      </div>
 
-      <Collapse in={pasteOpen}>
-        <Stack direction="row" spacing={1} alignItems="flex-start">
-          <TextField
-            multiline
-            minRows={3}
-            maxRows={8}
-            fullWidth
-            size="small"
+      {pasteOpen && (
+        <div className="flex flex-row items-start gap-2">
+          <textarea
+            className="flex-1 min-h-[80px] text-sm font-mono p-2 rounded-md border border-input bg-transparent shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
             placeholder={"0x1A2B3C40\n0xDEADBEEF"}
             value={pasteText}
             onChange={(e) => setPasteText(e.target.value)}
-            slotProps={{ input: { sx: { fontFamily: "monospace", fontSize: 13 } } }}
           />
           <Button
-            variant="contained"
-            size="small"
+            size="sm"
             disabled={loading || pasteText.trim() === ""}
             onClick={() => void loadContent(pasteText)}
           >
             Load
           </Button>
-        </Stack>
-      </Collapse>
+        </div>
+      )}
 
       {error && (
-        <Alert severity="error" onClose={() => setError(null)}>
-          {error}
+        <Alert variant="destructive">
+          <AlertDescription>{error}</AlertDescription>
         </Alert>
       )}
       {summary && summary.errors.length > 0 && (
-        <Alert severity="warning">
-          {summary.errors.length} line(s) failed to parse (e.g. line{" "}
-          {summary.errors[0].line}: {summary.errors[0].message})
+        <Alert>
+          <AlertDescription>
+            {summary.errors.length} line(s) failed to parse (e.g. line{" "}
+            {summary.errors[0].line}: {summary.errors[0].message})
+          </AlertDescription>
         </Alert>
       )}
-    </Stack>
+    </div>
   );
 };

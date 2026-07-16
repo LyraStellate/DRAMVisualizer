@@ -1,31 +1,28 @@
 import React from "react";
-import { Box, ThemeProvider, createTheme } from "@mui/material";
 import { ConfigurationPanel } from "./features/configuration";
 import { DRAMConfigProvider } from "./shared/context/DRAMConfigContext";
 import { MemoryMapPanel } from "./features/memoryMap";
-
-const theme = createTheme();
+import {
+  ResizableHandle,
+  ResizablePanel,
+  ResizablePanelGroup,
+} from "./components/ui/resizable";
 
 const App: React.FC = () => {
   return (
-    <ThemeProvider theme={theme}>
-      <DRAMConfigProvider>
-        <Box>
-          <ConfigurationPanel />
-
-          <Box
-            sx={{
-              flexGrow: 1,
-              display: "flex",
-              flexDirection: "column",
-              gap: 2,
-            }}
-          >
+    <DRAMConfigProvider>
+      <div className="h-screen w-screen overflow-hidden bg-background text-foreground">
+        <ResizablePanelGroup direction="horizontal">
+          <ResizablePanel defaultSize={33} minSize={20} className="border-r border-border bg-card">
+            <ConfigurationPanel />
+          </ResizablePanel>
+          <ResizableHandle withHandle />
+          <ResizablePanel defaultSize={67} className="flex flex-col bg-background relative">
             <MemoryMapPanel />
-          </Box>
-        </Box>
-      </DRAMConfigProvider>
-    </ThemeProvider>
+          </ResizablePanel>
+        </ResizablePanelGroup>
+      </div>
+    </DRAMConfigProvider>
   );
 };
 

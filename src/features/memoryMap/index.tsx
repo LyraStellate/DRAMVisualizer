@@ -1,10 +1,10 @@
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
-import { Box, IconButton, Tooltip } from "@mui/material";
-import CenterFocusStrongIcon from "@mui/icons-material/CenterFocusStrong";
+import { Focus } from "lucide-react";
 import { useDRAMConfigState } from "../../shared/context/DRAMConfigContext";
 import { HIERARCHY_ORDER } from "../../shared/constants/dram";
 import { VisualizerEngine } from "./engine/VisualizerEngine";
 import { TraceControls } from "./components/TraceControls";
+import { Button } from "@/components/ui/button";
 
 const noopSubscribe = () => () => {};
 
@@ -48,25 +48,13 @@ export const MemoryMapPanel = () => {
   );
 
   return (
-    <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
+    <div className="flex flex-col gap-2 h-full w-full p-4">
       <TraceControls engine={engine} />
-      <Box
+      <div
         ref={containerRef}
         tabIndex={0}
-        sx={{
-          position: "relative",
-          height: "70vh",
-          minHeight: 320,
-          borderRadius: 1,
-          border: "1px solid",
-          borderColor: "divider",
-          overflow: "hidden",
-          overscrollBehavior: "none",
-          touchAction: "none",
-          cursor: "grab",
-          "&:active": { cursor: "grabbing" },
-          outline: "none",
-        }}
+        className="relative flex-1 min-h-[320px] rounded-md border border-border overflow-hidden cursor-grab active:cursor-grabbing outline-none"
+        style={{ overscrollBehavior: "none", touchAction: "none" }}
       >
         <canvas
           ref={glCanvasRef}
@@ -82,42 +70,27 @@ export const MemoryMapPanel = () => {
             pointerEvents: "none",
           }}
         />
-        <Tooltip title="Fit view (Home)">
-          <IconButton
-            size="small"
-            onClick={() => engine?.fit(true)}
-            sx={{
-              position: "absolute",
-              left: 8,
-              top: 8,
-              bgcolor: "rgba(255,255,255,0.85)",
-              "&:hover": { bgcolor: "rgba(255,255,255,1)" },
-            }}
-          >
-            <CenterFocusStrongIcon fontSize="small" />
-          </IconButton>
-        </Tooltip>
+        <Button
+          variant="secondary"
+          size="icon"
+          title="Fit view (Home)"
+          onClick={() => engine?.fit(true)}
+          className="absolute left-2 top-2 h-8 w-8 bg-background/85 hover:bg-background/100 shadow-sm"
+        >
+          <Focus className="h-4 w-4" />
+        </Button>
         {hover && (
-          <Box
-            sx={{
-              position: "fixed",
+          <div
+            className="fixed px-2 py-1 bg-gray-900/90 text-white text-xs rounded pointer-events-none whitespace-nowrap z-50"
+            style={{
               left: hover.clientX + 14,
               top: hover.clientY + 14,
-              px: 1,
-              py: 0.5,
-              bgcolor: "rgba(40, 44, 52, 0.92)",
-              color: "#fff",
-              fontSize: 12,
-              borderRadius: 1,
-              pointerEvents: "none",
-              zIndex: (theme) => theme.zIndex.tooltip,
-              whiteSpace: "nowrap",
             }}
           >
             {hover.breadcrumb}
-          </Box>
+          </div>
         )}
-      </Box>
-    </Box>
+      </div>
+    </div>
   );
 };

@@ -1,4 +1,3 @@
-import { Box, Typography } from "@mui/material";
 import { DRAMStructures } from "../../../shared/types/dram";
 import { getBit } from "../../../shared/utils/parsing";
 
@@ -13,32 +12,21 @@ export const CheckPanel = ({ totalCapacity, dramStructures }: Props) => {
     0
   );
   const bitsFromCapacity = getBit(totalCapacity);
-  let statusText: string;
-  let statusColor: string = "text.secondary";
-  let messageDetail: string = `Capacity requires: ${bitsFromCapacity} bits`;
-  if (totalNbitSum === bitsFromCapacity) {
-    statusText = "Status: Consistent";
-    statusColor = "success.main";
-  } else {
-    statusText = "Status: Inconsistent";
-    statusColor = "error.main";
-  }
+  const isConsistent = totalNbitSum === bitsFromCapacity;
+
   return (
-    <Box>
-      <Typography variant="subtitle1" gutterBottom>
-        Bit Count Consistency
-      </Typography>
-      <Typography variant="body2">{messageDetail}</Typography>
-      <Typography
-        variant="body2"
-        sx={{
-          color: statusColor,
-          fontWeight: "bold",
-          mt: 0.5,
-        }}
+    <div className="mt-4 p-3 rounded-md bg-muted/50 border border-border">
+      <h4 className="text-sm font-semibold mb-1">Bit Count Consistency</h4>
+      <p className="text-xs text-muted-foreground mb-1">
+        Capacity requires: {bitsFromCapacity} bits
+      </p>
+      <p
+        className={`text-sm font-bold ${
+          isConsistent ? "text-green-600 dark:text-green-400" : "text-destructive"
+        }`}
       >
-        {statusText}
-      </Typography>
-    </Box>
+        Status: {isConsistent ? "Consistent" : "Inconsistent"}
+      </p>
+    </div>
   );
 };
