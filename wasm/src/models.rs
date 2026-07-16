@@ -41,6 +41,7 @@ pub type AddressMapping = HashMap<DRAMStructure, Vec<AddressFunction>>;
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct TraceEntry {
     pub addr: u64,
+    pub original_line: usize,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
@@ -65,4 +66,5 @@ pub struct DecodedAccess {
     pub addr_hex: String,
     /// Element index per hierarchy level, in `CANONICAL_ORDER`. Unmapped levels are 0.
     pub path: [u32; 7],
+    pub original_line: usize,
 }

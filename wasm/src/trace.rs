@@ -20,7 +20,8 @@ pub fn parse_trace(content: &str) -> (Vec<TraceEntry>, Vec<TraceParseError>) {
     let mut entries = Vec::new();
     let mut errors = Vec::new();
     for (i, raw) in content.lines().enumerate() {
-        match parse_line(raw) {
+        let original_line = i + 1;
+        match parse_line(raw, original_line) {
             Ok(Some(entry)) => entries.push(entry),
             Ok(None) => {}
             Err(message) => errors.push(TraceParseError {
@@ -32,7 +33,7 @@ pub fn parse_trace(content: &str) -> (Vec<TraceEntry>, Vec<TraceParseError>) {
     (entries, errors)
 }
 
-fn parse_line(raw: &str) -> Result<Option<TraceEntry>, String> {
+fn parse_line(raw: &str, original_line: usize) -> Result<Option<TraceEntry>, String> {
     let line = raw.trim();
     if line.is_empty() {
         return Ok(None);
@@ -43,7 +44,7 @@ fn parse_line(raw: &str) -> Result<Option<TraceEntry>, String> {
         return Err("expected a single address per line".to_string());
     }
     let addr = parse_addr(addr_token)?;
-    Ok(Some(TraceEntry { addr }))
+    Ok(Some(TraceEntry { addr, original_line }))
 }
 
 fn parse_addr(token: &str) -> Result<u64, String> {
@@ -111,6 +112,7 @@ pub fn decode_window(
             index: start + offset,
             addr_hex: format!("{:#X}", entry.addr),
             path: decode_to_canonical_path(decoder, structures, entry.addr),
+            original_line: entry.original_line,
         })
         .collect()
 }
@@ -126,9 +128,9 @@ mod tests {
         assert_eq!(
             entries,
             vec![
-                TraceEntry { addr: 0x10 },
-                TraceEntry { addr: 0x1F },
-                TraceEntry { addr: 0x30 },
+                TraceEntry { addr: 0x10, original_line: 1 },
+                TraceEntry { addr: 0x1F, original_line: 2 },
+                TraceEntry { addr: 0x30, original_line: 3 },
             ]
         );
     }
@@ -144,7 +146,7 @@ mod tests {
     #[test]
     fn rejects_unprefixed_and_non_hex_addresses() {
         let (entries, errors) = parse_trace("255\nDEADBEEF\n0xnothex\n0x10\n");
-        assert_eq!(entries, vec![TraceEntry { addr: 0x10 }]);
+        assert_eq!(entries, vec![TraceEntry { addr: 0x10, original_line: 4 }]);
         assert_eq!(errors.len(), 3);
         assert_eq!(errors[0].line, 1);
         assert_eq!(errors[1].line, 2);

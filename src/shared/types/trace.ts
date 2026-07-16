@@ -14,4 +14,5 @@ export interface DecodedAccess {
   addrHex: string;
   /** Element index per hierarchy level, in HIERARCHY_ORDER (length 7). */
   path: number[];
+  originalLine: number;
 }

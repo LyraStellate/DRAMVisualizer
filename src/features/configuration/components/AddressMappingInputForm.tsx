@@ -6,6 +6,12 @@ import {
 import { getBit } from "../../../shared/utils/parsing";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
 
 interface Props {
   dramStructures: DRAMStructures;
@@ -56,35 +62,39 @@ export const AddresMappingInputForm = ({
     onChange(key, newAddressFunction, raw);
   };
 
+  const validKeys = (Object.keys(dramStructures) as Array<keyof DRAMStructures>).filter(
+    (key) => getBit(dramStructures[key]) > 0
+  );
+
   return (
-    <div className="flex flex-col gap-4 mt-2">
-      {(Object.keys(dramStructures) as Array<keyof DRAMStructures>).map(
-        (key) => {
-          const structureValue = dramStructures[key];
-          const bits = getBit(structureValue);
+    <Accordion type="single" collapsible className="w-full flex flex-col gap-2">
+      {validKeys.map((key) => {
+        const bits = getBit(dramStructures[key]);
 
-          if (bits <= 0) {
-            return null;
-          }
-
-          return (
-            <div key={key} className="flex flex-col gap-2 p-3 bg-muted/30 rounded-md border border-border">
-              <h4 className="text-sm font-semibold capitalize text-foreground">{key}</h4>
-
-              <div className="grid grid-cols-1 gap-2">
+        return (
+          <AccordionItem
+            key={key}
+            value={key}
+            className="border border-border rounded-md bg-muted/20 overflow-hidden px-0"
+          >
+            <AccordionTrigger className="px-3 py-2 text-sm font-semibold capitalize hover:no-underline hover:bg-muted/40 transition-colors">
+              {key} Mapping
+            </AccordionTrigger>
+            <AccordionContent className="px-3 pb-3 pt-2 border-t border-border bg-background">
+              <div className="grid grid-cols-1 gap-2.5">
                 {Array.from({ length: bits }, (_, index) => {
                   const raw = value[key]?.[index] || "";
                   const mask = parseMask(raw);
                   const invalid = mask === null;
                   return (
-                    <div key={`${key}-nbit-${index}`} className="flex items-center gap-2">
+                    <div key={`${key}-nbit-${index}`} className="flex items-start gap-2 pt-1">
                       <Label
                         htmlFor={`${key}-nbit-input-${index}`}
-                        className="w-16 text-xs text-muted-foreground shrink-0 text-right"
+                        className="w-12 text-xs text-muted-foreground shrink-0 text-right font-mono mt-2"
                       >
-                        {key}[{index}]
+                        {key.substring(0, 3)}[{index}]
                       </Label>
-                      <div className="flex-1">
+                      <div className="flex-1 flex flex-col gap-1">
                         <Input
                           type="text"
                           placeholder="e.g. 0x14"
@@ -93,12 +103,12 @@ export const AddresMappingInputForm = ({
                           onChange={(e) =>
                             handleSetAddressMapping(key, index, e.target.value)
                           }
-                          className={`h-8 text-sm ${invalid ? "border-destructive" : ""}`}
+                          className={`h-8 text-sm font-mono ${invalid ? "border-destructive" : ""}`}
                         />
-                        {invalid && <p className="text-[10px] text-destructive mt-0.5">invalid mask</p>}
+                        {invalid && <p className="text-xs text-destructive">invalid mask</p>}
                         {!invalid && mask > 0n && (
-                          <p className="text-[10px] text-muted-foreground mt-0.5">
-                            bits: {maskToSelectedBits(mask).join(",")}
+                          <p className="text-xs text-muted-foreground bg-muted/50 px-2 py-1 rounded-sm break-all font-mono">
+                            bits: {maskToSelectedBits(mask).join(", ")}
                           </p>
                         )}
                       </div>
@@ -106,10 +116,10 @@ export const AddresMappingInputForm = ({
                   );
                 })}
               </div>
-            </div>
-          );
-        }
-      )}
-    </div>
+            </AccordionContent>
+          </AccordionItem>
+        );
+      })}
+    </Accordion>
   );
 };

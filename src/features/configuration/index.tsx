@@ -22,6 +22,13 @@ import {
   DEFAULT_TOTAL_CAPACITY,
 } from "./defaults";
 import { Button } from "@/components/ui/button";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
+import { Settings2, Cpu, Database } from "lucide-react";
 
 export const ConfigurationPanel = () => {
   const [totalCapacity, setTotalCapacity] = useState<number>(
@@ -94,42 +101,78 @@ export const ConfigurationPanel = () => {
   };
 
   return (
-    <div className="h-full w-full flex flex-col overflow-y-auto custom-scrollbar">
-      <div className="p-4 border-b border-border">
-        <h2 className="text-lg font-bold mb-4">DRAM Configuration</h2>
-        <div className="flex flex-col gap-4">
-          <TotalCapacityInputForm onChange={handleTotalCapacityUpdate} />
-          <DRAMStructuresInputForm
-            value={dramStructures}
-            onChange={handleDRAMStructuresChange}
-          />
-          <CheckPanel
-            dramStructures={dramStructures}
-            totalCapacity={totalCapacity}
-          />
-          <Button onClick={handleDramConfigApply} className="w-full mt-2">
-            Apply DRAM Configuration
-          </Button>
-        </div>
+    <div className="h-full w-full flex flex-col overflow-y-auto custom-scrollbar bg-card">
+      <div className="p-4 border-b border-border bg-muted/20">
+        <h2 className="text-lg font-bold flex items-center gap-2">
+          <Settings2 className="w-5 h-5 text-primary" />
+          Configuration
+        </h2>
+        <p className="text-xs text-muted-foreground mt-1">
+          Adjust DRAM and Memory Controller parameters
+        </p>
       </div>
 
-      <div className="p-4 pb-8">
-        <h2 className="text-lg font-bold mb-4">Memory Controller Config</h2>
-        <div className="flex flex-col gap-4">
-          <AddresMappingInputForm
-            dramStructures={dramStructures}
-            value={maskInputs}
-            onChange={handleAddressMappingChange}
-          />
-          <Button
-            onClick={handleMemoryControllerApply}
-            className="w-full mt-2"
-            variant="secondary"
-          >
-            Apply Memory Controller Config
-          </Button>
-        </div>
-      </div>
+      <Accordion
+        type="multiple"
+        defaultValue={["dram-config", "mc-config"]}
+        className="w-full"
+      >
+        <AccordionItem value="dram-config" className="border-b border-border">
+          <AccordionTrigger className="px-4 py-3 hover:bg-muted/50 transition-colors">
+            <div className="flex items-center gap-2 font-semibold">
+              <Database className="w-4 h-4 text-muted-foreground" />
+              DRAM Geometry
+            </div>
+          </AccordionTrigger>
+          <AccordionContent className="px-4 pb-4">
+            <div className="flex flex-col gap-5 pt-2">
+              <TotalCapacityInputForm onChange={handleTotalCapacityUpdate} />
+              
+              <div className="flex flex-col gap-2">
+                <span className="text-sm font-medium">Structures</span>
+                <DRAMStructuresInputForm
+                  value={dramStructures}
+                  onChange={handleDRAMStructuresChange}
+                />
+              </div>
+
+              <CheckPanel
+                dramStructures={dramStructures}
+                totalCapacity={totalCapacity}
+              />
+              <Button onClick={handleDramConfigApply} className="w-full mt-2" size="sm">
+                Apply Geometry
+              </Button>
+            </div>
+          </AccordionContent>
+        </AccordionItem>
+
+        <AccordionItem value="mc-config" className="border-b-0">
+          <AccordionTrigger className="px-4 py-3 hover:bg-muted/50 transition-colors">
+            <div className="flex items-center gap-2 font-semibold">
+              <Cpu className="w-4 h-4 text-muted-foreground" />
+              Memory Controller
+            </div>
+          </AccordionTrigger>
+          <AccordionContent className="px-4 pb-8">
+            <div className="flex flex-col gap-4 pt-2">
+              <AddresMappingInputForm
+                dramStructures={dramStructures}
+                value={maskInputs}
+                onChange={handleAddressMappingChange}
+              />
+              <Button
+                onClick={handleMemoryControllerApply}
+                className="w-full mt-2"
+                variant="secondary"
+                size="sm"
+              >
+                Apply Controller Config
+              </Button>
+            </div>
+          </AccordionContent>
+        </AccordionItem>
+      </Accordion>
     </div>
   );
 };

@@ -23,6 +23,7 @@ function makeFakeInvoke(total: number) {
         index: i,
         addrHex: `0x${i.toString(16).toUpperCase()}`,
         path: [0, 0, 0, 0, 0, 0, i % 7],
+        originalLine: i + 1,
       });
     }
     return data as T;

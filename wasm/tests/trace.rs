@@ -63,6 +63,7 @@ mod tests {
         let trace: Vec<TraceEntry> = (0..10)
             .map(|i| TraceEntry {
                 addr: addr_of(i, 0, 0, 0, 0),
+                original_line: i as usize + 1,
             })
             .collect();
 
@@ -80,7 +81,7 @@ mod tests {
 
         // The per-call count is capped at MAX_DECODE_WINDOW.
         let long: Vec<TraceEntry> = (0..MAX_DECODE_WINDOW as u64 + 100)
-            .map(|i| TraceEntry { addr: i })
+            .map(|i| TraceEntry { addr: i, original_line: i as usize + 1 })
             .collect();
         let window = decode_window(&decoder, &structures, &long, 0, usize::MAX);
         assert_eq!(window.len(), MAX_DECODE_WINDOW);

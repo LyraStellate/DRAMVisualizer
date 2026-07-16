@@ -5,7 +5,7 @@ import {
   useRef,
   useState,
 } from "react";
-import { Upload, FileEdit, StepForward, Play, Pause, RotateCcw } from "lucide-react";
+import { StepForward, Play, Pause, RotateCcw } from "lucide-react";
 import { invoke } from "../../../shared/backend";
 import { HIERARCHY_ORDER } from "../../../shared/constants/dram";
 import { DecodedAccess, TraceSummary } from "../../../shared/types/trace";
@@ -14,23 +14,22 @@ import { VisualizerEngine } from "../engine/VisualizerEngine";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { useTraceContext } from "../../../shared/context/TraceContext";
 
 interface Props {
   engine: VisualizerEngine | null;
 }
 
 export const TraceControls = ({ engine }: Props) => {
+  const { traceText, setTraceText, setCurrentLine } = useTraceContext();
   const [summary, setSummary] = useState<TraceSummary | null>(null);
   const [cursor, setCursor] = useState(0);
   const [playing, setPlaying] = useState(false);
   const [intervalMs, setIntervalMs] = useState(500);
   const [current, setCurrent] = useState<DecodedAccess | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [pasteOpen, setPasteOpen] = useState(false);
-  const [pasteText, setPasteText] = useState("");
   const [loading, setLoading] = useState(false);
 
-  const fileInputRef = useRef<HTMLInputElement | null>(null);
   const clientRef = useRef<TraceClient>();
   if (!clientRef.current) clientRef.current = new TraceClient();
 
@@ -38,6 +37,7 @@ export const TraceControls = ({ engine }: Props) => {
   const totalRef = useRef(0);
   const steppingRef = useRef(false);
   const engineRef = useRef(engine);
+  const loadedTextRef = useRef<string | null>(null);
   engineRef.current = engine;
 
   const loadContent = useCallback(async (content: string) => {
@@ -50,9 +50,11 @@ export const TraceControls = ({ engine }: Props) => {
       clientRef.current!.setTotal(result.total);
       totalRef.current = result.total;
       cursorRef.current = 0;
+      loadedTextRef.current = content;
       setSummary(result);
       setCursor(0);
       setCurrent(null);
+      setCurrentLine(null);
       setPlaying(false);
       engineRef.current?.clearFlashes();
     } catch (e) {
@@ -60,10 +62,28 @@ export const TraceControls = ({ engine }: Props) => {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [setCurrentLine]);
+
+  // Ensure content is loaded if changed before playing or stepping
+  const ensureLoaded = useCallback(async () => {
+    if (traceText.trim() === "") return false;
+    if (traceText !== loadedTextRef.current) {
+      await loadContent(traceText);
+      // Wait for React state to process if needed, but the ref is updated instantly
+    }
+    return true;
+  }, [traceText, loadContent]);
 
   const step = useCallback(async () => {
     if (steppingRef.current) return;
+    
+    // Auto-load if modified
+    const isLoaded = await ensureLoaded();
+    if (!isLoaded) {
+      setPlaying(false);
+      return;
+    }
+
     const index = cursorRef.current;
     if (index >= totalRef.current) {
       setPlaying(false);
@@ -75,6 +95,7 @@ export const TraceControls = ({ engine }: Props) => {
       if (access) {
         engineRef.current?.flashAccess(access);
         setCurrent(access);
+        setCurrentLine(access.originalLine);
       }
       cursorRef.current = index + 1;
       setCursor(index + 1);
@@ -84,15 +105,16 @@ export const TraceControls = ({ engine }: Props) => {
     } finally {
       steppingRef.current = false;
     }
-  }, []);
+  }, [ensureLoaded, setCurrentLine]);
 
   const reset = useCallback(() => {
     cursorRef.current = 0;
     setCursor(0);
     setCurrent(null);
+    setCurrentLine(null);
     setPlaying(false);
     engineRef.current?.clearFlashes();
-  }, []);
+  }, [setCurrentLine]);
 
   useEffect(() => {
     if (!playing) return;
@@ -102,49 +124,18 @@ export const TraceControls = ({ engine }: Props) => {
     return () => window.clearInterval(id);
   }, [playing, intervalMs, step]);
 
-  const onFileChange = async (e: ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    e.target.value = "";
-    if (!file) return;
-    await loadContent(await file.text());
-  };
-
-  const hasTrace = summary !== null && summary.total > 0;
-  const atEnd = summary !== null && cursor >= summary.total;
+  const hasTraceText = traceText.trim().length > 0;
+  const hasLoadedTrace = summary !== null && summary.total > 0;
+  const atEnd = hasLoadedTrace && cursor >= summary.total;
 
   return (
-    <div className="flex flex-col gap-2">
+    <div className="flex flex-col gap-2 p-4 pb-0">
       <div className="flex flex-row items-center flex-wrap gap-2">
-        <input
-          ref={fileInputRef}
-          type="file"
-          accept=".txt,.trace,.log,text/plain"
-          hidden
-          onChange={onFileChange}
-        />
-        <Button
-          variant="outline"
-          size="sm"
-          disabled={loading}
-          onClick={() => fileInputRef.current?.click()}
-        >
-          <Upload className="w-4 h-4 mr-2" />
-          Load file
-        </Button>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => setPasteOpen((open) => !open)}
-        >
-          <FileEdit className="w-4 h-4 mr-2" />
-          Paste
-        </Button>
-        
         <Button
           variant="outline"
           size="icon"
           title="Step one access"
-          disabled={!hasTrace || atEnd || loading}
+          disabled={!hasTraceText || (hasLoadedTrace && atEnd) || loading}
           onClick={() => void step()}
         >
           <StepForward className="w-4 h-4" />
@@ -152,9 +143,17 @@ export const TraceControls = ({ engine }: Props) => {
         <Button
           variant="outline"
           size="icon"
-          title={playing ? "Pause" : "Play"}
-          disabled={!hasTrace || atEnd}
-          onClick={() => setPlaying((p) => !p)}
+          title={playing ? "Pause" : "Play (Auto loads if changed)"}
+          disabled={!hasTraceText || (hasLoadedTrace && atEnd)}
+          onClick={() => {
+            if (!playing) {
+              void ensureLoaded().then(success => {
+                if (success) setPlaying(true);
+              });
+            } else {
+              setPlaying(false);
+            }
+          }}
         >
           {playing ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
         </Button>
@@ -162,7 +161,7 @@ export const TraceControls = ({ engine }: Props) => {
           variant="outline"
           size="icon"
           title="Reset"
-          disabled={!hasTrace}
+          disabled={!hasTraceText}
           onClick={reset}
         >
           <RotateCcw className="w-4 h-4" />
@@ -184,47 +183,29 @@ export const TraceControls = ({ engine }: Props) => {
         <span className="text-sm font-mono text-muted-foreground">
           {summary
             ? `${cursor.toLocaleString()} / ${summary.total.toLocaleString()}`
-            : "no trace loaded"}
+            : "0 / 0"}
         </span>
 
         {current && (
-          <div className="flex items-center gap-2 text-sm">
+          <div className="flex items-center gap-2 text-sm ml-auto">
             <span className="font-mono font-medium">{current.addrHex}</span>
-            <span className="text-muted-foreground text-xs">
+            <span className="text-muted-foreground text-xs bg-muted px-2 py-1 rounded-md">
               {current.path
-                .map((index, level) => `${HIERARCHY_ORDER[level]} ${index}`)
+                .map((index, level) => `${HIERARCHY_ORDER[level].substring(0,3)}[${index}]`)
                 .join(" › ")}
             </span>
           </div>
         )}
       </div>
 
-      {pasteOpen && (
-        <div className="flex flex-row items-start gap-2">
-          <textarea
-            className="flex-1 min-h-[80px] text-sm font-mono p-2 rounded-md border border-input bg-transparent shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-            placeholder={"0x1A2B3C40\n0xDEADBEEF"}
-            value={pasteText}
-            onChange={(e) => setPasteText(e.target.value)}
-          />
-          <Button
-            size="sm"
-            disabled={loading || pasteText.trim() === ""}
-            onClick={() => void loadContent(pasteText)}
-          >
-            Load
-          </Button>
-        </div>
-      )}
-
       {error && (
-        <Alert variant="destructive">
-          <AlertDescription>{error}</AlertDescription>
+        <Alert variant="destructive" className="mt-2 py-2">
+          <AlertDescription className="text-xs">{error}</AlertDescription>
         </Alert>
       )}
       {summary && summary.errors.length > 0 && (
-        <Alert>
-          <AlertDescription>
+        <Alert className="mt-2 py-2 bg-yellow-500/10 border-yellow-500/50 text-yellow-600 dark:text-yellow-500">
+          <AlertDescription className="text-xs">
             {summary.errors.length} line(s) failed to parse (e.g. line{" "}
             {summary.errors[0].line}: {summary.errors[0].message})
           </AlertDescription>

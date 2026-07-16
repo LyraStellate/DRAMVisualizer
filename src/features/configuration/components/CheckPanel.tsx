@@ -1,5 +1,7 @@
 import { DRAMStructures } from "../../../shared/types/dram";
 import { getBit } from "../../../shared/utils/parsing";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { CheckCircle2, AlertCircle } from "lucide-react";
 
 interface Props {
   totalCapacity: number;
@@ -15,18 +17,19 @@ export const CheckPanel = ({ totalCapacity, dramStructures }: Props) => {
   const isConsistent = totalNbitSum === bitsFromCapacity;
 
   return (
-    <div className="mt-4 p-3 rounded-md bg-muted/50 border border-border">
-      <h4 className="text-sm font-semibold mb-1">Bit Count Consistency</h4>
-      <p className="text-xs text-muted-foreground mb-1">
-        Capacity requires: {bitsFromCapacity} bits
-      </p>
-      <p
-        className={`text-sm font-bold ${
-          isConsistent ? "text-green-600 dark:text-green-400" : "text-destructive"
-        }`}
-      >
-        Status: {isConsistent ? "Consistent" : "Inconsistent"}
-      </p>
-    </div>
+    <Alert variant={isConsistent ? "default" : "destructive"} className="mt-2 py-2 px-3">
+      {isConsistent ? (
+        <CheckCircle2 className="h-4 w-4 text-green-500" />
+      ) : (
+        <AlertCircle className="h-4 w-4" />
+      )}
+      <AlertTitle className="text-xs font-semibold mb-0.5 flex items-center">
+        Geometry Consistency
+      </AlertTitle>
+      <AlertDescription className="text-[10px] mt-0.5">
+        Capacity bits: <strong>{bitsFromCapacity}</strong> | Structure bits: <strong>{totalNbitSum}</strong>
+        {!isConsistent && " (Mismatch)"}
+      </AlertDescription>
+    </Alert>
   );
 };
