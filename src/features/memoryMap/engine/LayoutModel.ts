@@ -48,13 +48,45 @@ export function buildLayoutTable(counts: number[]): LayoutTable {
   let aspect = ROOT_RECT.w / ROOT_RECT.h;
   for (let level = 0; level < NUM_LEVELS; level++) {
     const count = Math.max(1, Math.floor(counts[level] ?? 1));
-    // Box levels (Channel..Subarray) reserve a label band at the top of the
-    // cell, pushing their children down. The root and Row have no label.
     const parentHasLabel = level >= 1 && level <= ROW_LEVEL;
-    const padX = PAD_FRAC;
-    const padY = PAD_FRAC + (parentHasLabel ? LABEL_FRAC : 0);
-    const innerW = 1 - 2 * padX;
-    const innerH = 1 - padY - BOTTOM_PAD_FRAC;
+    const isInnerBox = level >= ROW_LEVEL;
+
+    // Default padding calculation
+    // level === 1 is Rank inside Channel. We remove Channel's inner vertical padding.
+    const isChannelInner = level === 1;
+    let basePadX = isInnerBox ? 0 : PAD_FRAC;
+    let basePadY = ((isInnerBox || isChannelInner) ? 0 : PAD_FRAC) + (parentHasLabel ? LABEL_FRAC : 0);
+    let bottomPadY = ((isInnerBox || isChannelInner) ? 0 : BOTTOM_PAD_FRAC);
+
+    // Increase margin inside Bank slightly
+    if (level === 4) {
+      basePadX = 0.06;
+      basePadY = 0.06 + (parentHasLabel ? LABEL_FRAC : 0);
+      bottomPadY = 0.06;
+    }
+
+    // Apply exact 3-column-width paddings inside Subarray (level 4) for its children
+    if (level === ROW_LEVEL || level === COLUMN_LEVEL) {
+      const colsInRow = counts[COLUMN_LEVEL] ?? 1;
+      const colWFrac = 1.0 / (colsInRow + 6); // Total 6 padding columns (3 left, 3 right)
+      
+      if (level === ROW_LEVEL) {
+        // Vertical padding for Row inside Subarray (3 column widths top and bottom)
+        const padYFrac = 3 * colWFrac * aspect;
+        basePadX = 0;
+        // Do NOT add LABEL_FRAC here because we want top and bottom to be perfectly symmetrical
+        basePadY = padYFrac;
+        bottomPadY = padYFrac;
+      } else if (level === COLUMN_LEVEL) {
+        // Horizontal padding for Column inside Row (3 column widths left and right)
+        basePadX = 3 * colWFrac;
+        basePadY = 0;
+        bottomPadY = 0;
+      }
+    }
+    
+    const innerW = 1 - 2 * basePadX;
+    const innerH = 1 - basePadY - bottomPadY;
     const innerAspect = aspect * (innerW / innerH);
 
     let cols: number;
@@ -83,7 +115,14 @@ export function buildLayoutTable(counts: number[]): LayoutTable {
     const pitchY = innerH / rows;
     const cellW = pitchX * (cols > 1 ? 1 - gapFrac : 1);
     const cellH = pitchY * (rows > 1 ? 1 - gapFrac : 1);
-    table.push({ count, cols, rows, padX, padY, pitchX, pitchY, cellW, cellH });
+    
+    // Distribute leftover space evenly so the grid is perfectly centered
+    const usedW = (cols - 1) * pitchX + cellW;
+    const usedH = (rows - 1) * pitchY + cellH;
+    const actualPadX = basePadX + (innerW - usedW) / 2;
+    const actualPadY = basePadY + (innerH - usedH) / 2;
+
+    table.push({ count, cols, rows, padX: actualPadX, padY: actualPadY, pitchX, pitchY, cellW, cellH });
     aspect = aspect * (cellW / cellH);
   }
   return table;

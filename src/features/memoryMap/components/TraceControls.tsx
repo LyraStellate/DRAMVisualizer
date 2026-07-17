@@ -1,5 +1,4 @@
 import {
-  ChangeEvent,
   useCallback,
   useEffect,
   useRef,
@@ -21,7 +20,7 @@ interface Props {
 }
 
 export const TraceControls = ({ engine }: Props) => {
-  const { traceText, setTraceText, setCurrentLine } = useTraceContext();
+  const { traceText, setCurrentLine } = useTraceContext();
   const [summary, setSummary] = useState<TraceSummary | null>(null);
   const [cursor, setCursor] = useState(0);
   const [playing, setPlaying] = useState(false);
@@ -117,7 +116,12 @@ export const TraceControls = ({ engine }: Props) => {
   }, [setCurrentLine]);
 
   useEffect(() => {
+    engineRef.current?.setPlaybackSpeed(intervalMs);
+  }, [intervalMs, engineRef.current]);
+
+  useEffect(() => {
     if (!playing) return;
+    void step();
     const id = window.setInterval(() => {
       void step();
     }, intervalMs);

@@ -65,10 +65,21 @@ void main() {
     color = mix(color, v_border, t);
   }
 
-  float f = v_flash;
+  float f = abs(v_flash);
   if (f > 0.001) {
-    color.rgb = mix(color.rgb, FLASH_COLOR, f) + FLASH_COLOR * f * 0.35; // additive glow
-    color.a = max(color.a, min(1.0, f + 0.2));
+    // If v_flash is negative, apply flash only to the border
+    bool borderOnly = v_flash < 0.0;
+    float flashMask = 1.0;
+    if (borderOnly && v_borderPx > 0.0) {
+      // Make the flashing border thicker (+1.5px on each side of the edge, total +3px)
+      float flashBorder = v_borderPx + 2.5;
+      flashMask = smoothstep(-flashBorder - 0.5, -flashBorder + 0.5, d);
+    }
+    
+    // Additive glow, slightly stronger for visibility
+    vec3 glow = FLASH_COLOR * f * (borderOnly ? 0.9 : 0.4);
+    color.rgb = mix(color.rgb, FLASH_COLOR, f * flashMask) + glow * flashMask;
+    color.a = max(color.a, min(1.0, f + 0.2) * flashMask);
   }
 
   float aa = 1.0 - smoothstep(-0.5, 0.5, d);

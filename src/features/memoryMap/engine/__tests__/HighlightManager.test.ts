@@ -1,35 +1,23 @@
 import { describe, expect, it } from "vitest";
 import {
-  AFTERGLOW,
-  BLINK_MS,
-  FADE_END_MS,
   HighlightManager,
   MAX_FLASHES,
   intensityAt,
 } from "../HighlightManager";
 
 describe("intensityAt", () => {
-  it("starts at full intensity and blinks", () => {
-    expect(intensityAt(0, false)).toBeCloseTo(1.0, 6);
-    // Half a period later the cosine is at its minimum.
-    expect(intensityAt(110, false)).toBeCloseTo(0.1, 6);
-    // One full period later it is back at the maximum.
-    expect(intensityAt(220, false)).toBeCloseTo(1.0, 6);
+  it("stays at 1.0 indefinitely if not replaced", () => {
+    const flash = { path: new Uint32Array(7), startMs: 0, replacedMs: null };
+    expect(intensityAt(0, flash, 1000)).toBeCloseTo(1.0, 6);
+    expect(intensityAt(5000, flash, 1000)).toBeCloseTo(1.0, 6);
   });
 
-  it("fades linearly to zero after the blink phase", () => {
-    const atBlinkEnd = intensityAt(BLINK_MS, false);
-    const mid = intensityAt((BLINK_MS + FADE_END_MS) / 2, false);
-    expect(mid).toBeCloseTo(atBlinkEnd / 2, 6);
-    expect(intensityAt(FADE_END_MS, false)).toBe(0);
-    expect(intensityAt(FADE_END_MS + 10_000, false)).toBe(0);
-  });
-
-  it("keeps an afterglow for the latest flash only", () => {
-    expect(intensityAt(FADE_END_MS + 10_000, true)).toBe(AFTERGLOW);
-    const mid = intensityAt((BLINK_MS + FADE_END_MS) / 2, true);
-    const atBlinkEnd = intensityAt(BLINK_MS, true);
-    expect(mid).toBeCloseTo((atBlinkEnd + AFTERGLOW) / 2, 6);
+  it("fades linearly to zero after being replaced", () => {
+    const flash = { path: new Uint32Array(7), startMs: 0, replacedMs: 1000 };
+    expect(intensityAt(1000, flash, 1000)).toBeCloseTo(1.0, 6);
+    expect(intensityAt(1500, flash, 1000)).toBeCloseTo(0.5, 6);
+    expect(intensityAt(2000, flash, 1000)).toBe(0);
+    expect(intensityAt(2500, flash, 1000)).toBe(0);
   });
 });
 
@@ -64,12 +52,18 @@ describe("HighlightManager / FlashMatch", () => {
     expect(match.narrow(0, MAX_FLASHES + 4).isEmpty).toBe(false);
   });
 
-  it("reports animation only while a flash is younger than the fade end", () => {
+  it("reports animation only while a replaced flash is fading", () => {
     const manager = new HighlightManager();
     manager.add([0, 0, 0, 0, 0, 0, 0], 0);
-    expect(manager.isAnimating(100)).toBe(true);
-    expect(manager.isAnimating(FADE_END_MS + 1)).toBe(false);
-    // The afterglow still renders (snapshot non-empty) without animating.
-    expect(manager.snapshot(FADE_END_MS + 1).isEmpty).toBe(false);
+    // Not replaced yet, so not animating
+    expect(manager.isAnimating(100)).toBe(false);
+    
+    // Add a new flash to replace the old one
+    manager.add([1, 0, 0, 0, 0, 0, 0], 200);
+    // Now animating because the first flash is fading out
+    expect(manager.isAnimating(300)).toBe(true);
+    
+    // Once fade duration passes, animation stops
+    expect(manager.isAnimating(200 + manager.fadeDurationMs + 1)).toBe(false);
   });
 });

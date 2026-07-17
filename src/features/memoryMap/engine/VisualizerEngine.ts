@@ -114,6 +114,11 @@ export class VisualizerEngine {
     this.renderNow();
   }
 
+  setPlaybackSpeed(intervalMs: number): void {
+    // Fade out completely within the interval, so we don't have multiple overlapping flashes
+    this.highlights.fadeDurationMs = Math.max(150, intervalMs * 0.8);
+  }
+
   resize(cssW: number, cssH: number, dpr: number): void {
     if (cssW <= 0 || cssH <= 0) return;
     this.camera.setViewport(cssW, cssH);
@@ -254,6 +259,10 @@ export class VisualizerEngine {
     const descend = shouldDescend(pxW, pxH, child, this.writer.count);
     const style = LEVEL_STYLES[level];
     const showBorder = pxW >= PX_BORDER && pxH >= PX_BORDER;
+    
+    // Subarray and above (level < ROW_LEVEL) get border-only flash (encoded as negative intensity)
+    const flashIntensity = level < ROW_LEVEL ? -match.intensity() : match.intensity();
+
     // World → camera-relative CSS px happens here, at emit time, so the GPU
     // never sees absolute world coordinates (float32 precision strategy §5.2).
     this.writer.push(
@@ -265,7 +274,7 @@ export class VisualizerEngine {
       showBorder ? style.border : 0,
       showBorder ? 1 : 0,
       level < ROW_LEVEL ? Math.min(5, pxW * 0.04) : 0,
-      match.intensity()
+      flashIntensity
     );
     if (pxW >= PX_LABEL && pxH >= 16 && level <= 4) {
       const alpha = Math.min(1, (pxW - PX_LABEL) / (0.5 * PX_LABEL));
@@ -280,7 +289,55 @@ export class VisualizerEngine {
         });
       }
     }
-    if (descend) this.walkChildren(level + 1, rect, match);
+    if (descend) {
+      this.walkChildren(level + 1, rect, match);
+    } else if (level < 6 && !match.isEmpty) {
+      this.drawProxyIndicators(rect, match);
+    }
+  }
+
+  private drawProxyIndicators(nodeRect: Rect, match: FlashMatch): void {
+    const cam = this.camera;
+    const nodePxW = nodeRect.w * cam.scale;
+    const nodePxH = nodeRect.h * cam.scale;
+    const MIN_PX = 6;
+
+    for (const c of match.candidates) {
+      // Find exact world rect of the active column (level 6)
+      const colRect = this.layoutModel.rectForPath(c.path, 6);
+      const colPxW = colRect.w * cam.scale;
+      const colPxH = colRect.h * cam.scale;
+
+      // Restrict proxy size to at most 30% of the parent node to avoid completely filling it
+      const maxW = Math.max(2, nodePxW * 0.3);
+      const maxH = Math.max(2, nodePxH * 0.3);
+
+      let indW = Math.max(colPxW, MIN_PX);
+      let indH = Math.max(colPxH, MIN_PX);
+      indW = Math.min(indW, maxW);
+      indH = Math.min(indH, maxH);
+
+      // Center the indicator exactly over the column
+      const centerX = (colRect.x - cam.centerX) * cam.scale + colPxW / 2;
+      const centerY = (colRect.y - cam.centerY) * cam.scale + colPxH / 2;
+
+      const alpha = Math.floor(c.intensity * 255);
+      if (alpha <= 0) continue;
+
+      const fillColor = rgba(255, 30, 30, alpha);
+
+      this.writer.push(
+        centerX - indW / 2,
+        centerY - indH / 2,
+        indW,
+        indH,
+        fillColor,
+        0, // border color
+        0, // showBorder
+        0, // borderPx
+        0  // flash
+      );
+    }
   }
 
   /**

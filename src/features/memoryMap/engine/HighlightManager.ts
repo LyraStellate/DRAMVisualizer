@@ -5,32 +5,28 @@
 export interface ActiveFlash {
   path: Uint32Array; // length 7, canonical order
   startMs: number;
+  replacedMs: number | null;
 }
 
 export const MAX_FLASHES = 8;
-export const BLINK_MS = 900; // blinking period of the curve
-export const FADE_END_MS = 1600; // end of the linear fade
-export const PERIOD_MS = 220; // one blink cycle (≈4 blinks in 900ms)
-export const AFTERGLOW = 0.25; // kept by the most recent flash only
+export const AFTERGLOW = 0.25; // deprecated, no longer used in new logic
 
 /**
- * Flash intensity at age `t` ms.
- *   t < 900ms      : blink   0.55 + 0.45·cos(2π·t/220)
- *   900..1600ms    : linear fade toward the floor
- *   after          : afterglow (latest flash only) marking the last access
+ * Flash intensity at time `nowMs`.
+ * The latest flash (replacedMs === null) stays at 1.0 indefinitely.
+ * Once replaced, it fades linearly from 1.0 to 0.0 over `fadeMs`.
  */
-export function intensityAt(t: number, isLatest: boolean): number {
-  if (t < 0) return 0;
-  const floor = isLatest ? AFTERGLOW : 0;
-  if (t < BLINK_MS) {
-    return 0.55 + 0.45 * Math.cos((2 * Math.PI * t) / PERIOD_MS);
+export function intensityAt(nowMs: number, flash: ActiveFlash, fadeMs: number): number {
+  if (flash.replacedMs === null) {
+    return 1.0;
   }
-  if (t < FADE_END_MS) {
-    const atBlinkEnd = 0.55 + 0.45 * Math.cos((2 * Math.PI * BLINK_MS) / PERIOD_MS);
-    const k = (t - BLINK_MS) / (FADE_END_MS - BLINK_MS);
-    return atBlinkEnd + (floor - atBlinkEnd) * k;
+  const fadeAge = nowMs - flash.replacedMs;
+  if (fadeAge <= 0) return 1.0;
+  if (fadeAge < fadeMs) {
+    const k = fadeAge / fadeMs;
+    return 1.0 - k;
   }
-  return floor;
+  return 0.0;
 }
 
 interface FlashCandidate {
@@ -46,7 +42,7 @@ interface FlashCandidate {
 export class FlashMatch {
   static readonly EMPTY = new FlashMatch([]);
 
-  constructor(private candidates: FlashCandidate[]) {}
+  constructor(public candidates: FlashCandidate[]) {}
 
   get isEmpty(): boolean {
     return this.candidates.length === 0;
@@ -71,11 +67,16 @@ export class FlashMatch {
 
 export class HighlightManager {
   private flashes: ActiveFlash[] = []; // newest first
+  public fadeDurationMs: number = 1000;
 
   add(path: ArrayLike<number>, nowMs: number): void {
+    if (this.flashes.length > 0 && this.flashes[0].replacedMs === null) {
+      this.flashes[0].replacedMs = nowMs;
+    }
     this.flashes.unshift({
       path: Uint32Array.from({ length: 7 }, (_, i) => path[i] ?? 0),
       startMs: nowMs,
+      replacedMs: null,
     });
     if (this.flashes.length > MAX_FLASHES) this.flashes.length = MAX_FLASHES;
   }
@@ -90,7 +91,7 @@ export class HighlightManager {
 
   /** True while any flash still needs animation frames. */
   isAnimating(nowMs: number): boolean {
-    return this.flashes.some((f) => nowMs - f.startMs < FADE_END_MS);
+    return this.flashes.some((f) => f.replacedMs !== null && (nowMs - f.replacedMs) < this.fadeDurationMs);
   }
 
   /** Root FlashMatch for this frame, with intensities evaluated at `nowMs`. */
@@ -98,7 +99,7 @@ export class HighlightManager {
     const candidates: FlashCandidate[] = [];
     for (let i = 0; i < this.flashes.length; i++) {
       const f = this.flashes[i];
-      const intensity = intensityAt(nowMs - f.startMs, i === 0);
+      const intensity = intensityAt(nowMs, f, this.fadeDurationMs);
       if (intensity <= 0.001) continue;
       candidates.push({ path: f.path, intensity });
     }
