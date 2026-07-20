@@ -49,7 +49,7 @@ flat in float v_flash;
 
 out vec4 outColor;
 
-const vec3 FLASH_COLOR = vec3(0.22, 0.85, 0.40);
+const vec3 FLASH_COLOR = vec3(0.0, 0.9, 1.0);
 
 void main() {
   vec2 hs = v_sizePx * 0.5;

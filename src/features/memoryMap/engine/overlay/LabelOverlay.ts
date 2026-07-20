@@ -44,8 +44,8 @@ export class LabelOverlay {
       const padX = 4;
       const maxW = label.w - padX * 2;
       if (maxW < 12) continue;
-      ctx.font = `${fontSize.toFixed(1)}px "Roboto", "Helvetica", sans-serif`;
-      ctx.fillStyle = `rgba(30, 35, 45, ${(0.8 * label.alpha).toFixed(3)})`;
+      ctx.font = `${fontSize.toFixed(1)}px "Inter", "Roboto", "Helvetica", sans-serif`;
+      ctx.fillStyle = `rgba(200, 215, 230, ${(0.85 * label.alpha).toFixed(3)})`;
       let text = label.text;
       if (ctx.measureText(text).width > maxW) {
         while (text.length > 1 && ctx.measureText(text + "…").width > maxW) {
@@ -59,9 +59,9 @@ export class LabelOverlay {
     if (hud) {
       ctx.font = '11px "Roboto Mono", monospace';
       const w = ctx.measureText(hud).width;
-      ctx.fillStyle = "rgba(0, 0, 0, 0.45)";
+      ctx.fillStyle = "rgba(10, 15, 25, 0.75)";
       ctx.fillRect(this.cssW - w - 14, 6, w + 10, 18);
-      ctx.fillStyle = "rgba(255, 255, 255, 0.95)";
+      ctx.fillStyle = "rgba(200, 215, 230, 0.95)";
       ctx.fillText(hud, this.cssW - w - 9, 10);
     }
   }

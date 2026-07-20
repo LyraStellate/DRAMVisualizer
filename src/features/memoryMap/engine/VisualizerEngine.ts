@@ -27,27 +27,29 @@ interface LevelStyle {
 }
 
 const BASE_COLORS: [number, number, number][] = [
-  [66, 133, 244], // Channel  – blue
-  [156, 39, 176], // Rank     – purple
-  [0, 150, 136], // BankGroup – teal
-  [255, 152, 0], // Bank     – orange
-  [76, 175, 80], // Subarray – green
-  [233, 30, 99], // Row      – pink
-  [255, 193, 7], // Column   – amber
+  [18, 24, 38],    // Channel
+  [26, 35, 50],    // Rank
+  [34, 46, 64],    // BankGroup
+  [43, 57, 79],    // Bank
+  [53, 70, 97],    // Subarray
+  [64, 84, 115],   // Row
+  [77, 100, 135],  // Column
 ];
 
-function mixWhite(c: number, k: number): number {
-  return Math.round(255 - (255 - c) * k);
-}
+const LEVEL_STYLES: LevelStyle[] = BASE_COLORS.map(([r, g, b], i) => {
+  // Border is lighter to provide crisp structure contrast
+  const borderR = Math.min(255, r + 40 + i * 5);
+  const borderG = Math.min(255, g + 50 + i * 5);
+  const borderB = Math.min(255, b + 60 + i * 5);
+  return {
+    containerFill: rgba(r, g, b, 255), // Solid opaque fill for cleaner stacking
+    flatFill: rgba(r + 10, g + 15, b + 20, 255),
+    border: rgba(borderR, borderG, borderB, 255),
+  };
+});
 
-const LEVEL_STYLES: LevelStyle[] = BASE_COLORS.map(([r, g, b]) => ({
-  containerFill: rgba(r, g, b, 26),
-  flatFill: rgba(mixWhite(r, 0.5), mixWhite(g, 0.5), mixWhite(b, 0.5), 255),
-  border: rgba((r * 0.55) | 0, (g * 0.55) | 0, (b * 0.55) | 0, 210),
-}));
-
-const ROOT_FILL = rgba(255, 255, 255, 255);
-const ROOT_BORDER = rgba(120, 130, 145, 160);
+const ROOT_FILL = rgba(10, 15, 25, 255);
+const ROOT_BORDER = rgba(40, 50, 70, 255);
 
 export interface HoverInfo {
   /** e.g. "Channel 1 › Rank 0 › BankGroup 2" */
