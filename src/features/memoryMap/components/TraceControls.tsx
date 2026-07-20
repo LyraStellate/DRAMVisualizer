@@ -20,7 +20,7 @@ interface Props {
 }
 
 export const TraceControls = ({ engine }: Props) => {
-  const { traceText, setCurrentLine } = useTraceContext();
+  const { traceText, setCurrentLine, requestSeekLine, setRequestSeekLine } = useTraceContext();
   const [summary, setSummary] = useState<TraceSummary | null>(null);
   const [cursor, setCursor] = useState(0);
   const [playing, setPlaying] = useState(false);
@@ -127,6 +127,32 @@ export const TraceControls = ({ engine }: Props) => {
     }, intervalMs);
     return () => window.clearInterval(id);
   }, [playing, intervalMs, step]);
+
+  useEffect(() => {
+    if (requestSeekLine !== null) {
+      void (async () => {
+        setPlaying(false);
+        const isLoaded = await ensureLoaded();
+        if (!isLoaded) {
+            setRequestSeekLine(null);
+            return;
+        }
+
+        const index = await clientRef.current!.findIndexByLine(requestSeekLine);
+        if (index !== null) {
+          const access = await clientRef.current!.get(index);
+          if (access) {
+            cursorRef.current = index;
+            setCursor(index);
+            setCurrent(access);
+            setCurrentLine(access.originalLine);
+            engineRef.current?.flashAccess(access);
+          }
+        }
+        setRequestSeekLine(null);
+      })();
+    }
+  }, [requestSeekLine, ensureLoaded, setCurrentLine, setRequestSeekLine]);
 
   const hasTraceText = traceText.trim().length > 0;
   const hasLoadedTrace = summary !== null && summary.total > 0;

@@ -44,6 +44,27 @@ export class TraceClient {
     return data[offset] ?? null;
   }
 
+  async findIndexByLine(line: number): Promise<number | null> {
+    if (this.total === 0) return null;
+    let low = 0;
+    let high = this.total - 1;
+    let result: number | null = null;
+
+    while (low <= high) {
+      const mid = Math.floor((low + high) / 2);
+      const access = await this.get(mid);
+      if (!access) break;
+
+      if (access.originalLine >= line) {
+        result = mid; // Potential match or the first one after
+        high = mid - 1;
+      } else {
+        low = mid + 1;
+      }
+    }
+    return result;
+  }
+
   private fetchChunk(chunk: number): Promise<DecodedAccess[]> {
     const cached = this.chunks.get(chunk);
     if (cached) {

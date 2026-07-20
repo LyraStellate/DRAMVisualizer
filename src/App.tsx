@@ -21,11 +21,11 @@ const App: React.FC = () => {
               <ConfigurationPanel />
             </ResizablePanel>
             <ResizableHandle withHandle />
-            <ResizablePanel defaultSize={10} minSize={5} className="border-r border-border bg-card">
+            <ResizablePanel defaultSize={13} minSize={5} className="border-r border-border bg-card">
               <TraceInputPanel />
             </ResizablePanel>
             <ResizableHandle withHandle />
-            <ResizablePanel defaultSize={70} className="flex flex-col bg-background relative">
+            <ResizablePanel defaultSize={67} className="flex flex-col bg-background relative">
               <MemoryMapPanel />
             </ResizablePanel>
           </ResizablePanelGroup>

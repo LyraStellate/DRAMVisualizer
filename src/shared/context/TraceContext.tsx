@@ -5,6 +5,8 @@ interface TraceContextState {
   setTraceText: (text: string) => void;
   currentLine: number | null;
   setCurrentLine: (line: number | null) => void;
+  requestSeekLine: number | null;
+  setRequestSeekLine: (line: number | null) => void;
 }
 
 const TraceContext = createContext<TraceContextState | undefined>(undefined);
@@ -14,10 +16,11 @@ export const TraceProvider: React.FC<{ children: ReactNode }> = ({
 }) => {
   const [traceText, setTraceText] = useState<string>("");
   const [currentLine, setCurrentLine] = useState<number | null>(null);
+  const [requestSeekLine, setRequestSeekLine] = useState<number | null>(null);
 
   return (
     <TraceContext.Provider
-      value={{ traceText, setTraceText, currentLine, setCurrentLine }}
+      value={{ traceText, setTraceText, currentLine, setCurrentLine, requestSeekLine, setRequestSeekLine }}
     >
       {children}
     </TraceContext.Provider>

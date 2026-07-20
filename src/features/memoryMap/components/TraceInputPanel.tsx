@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 const MAX_DISPLAY_LINES = 10000;
 
 export const TraceInputPanel: React.FC = () => {
-  const { traceText, setTraceText, currentLine } = useTraceContext();
+  const { traceText, setTraceText, currentLine, setRequestSeekLine } = useTraceContext();
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const lineNumbersRef = useRef<HTMLDivElement>(null);
   const highlightRef = useRef<HTMLDivElement>(null);
@@ -99,11 +99,15 @@ export const TraceInputPanel: React.FC = () => {
         {/* Line Numbers Gutter */}
         <div
           ref={lineNumbersRef}
-          className="absolute top-0 left-0 bottom-0 w-12 bg-muted/30 border-r border-border overflow-hidden text-right pr-2 py-2 select-none text-muted-foreground font-mono text-xs leading-[20px]"
+          className="absolute z-10 top-0 left-0 bottom-0 w-12 bg-muted/30 border-r border-border overflow-hidden text-right pr-2 py-2 select-none text-muted-foreground font-mono text-xs leading-[20px]"
           aria-hidden="true"
         >
           {displayedLines.map((_: string, i: number) => (
-            <div key={i} className={currentLine === i + 1 ? "text-foreground font-bold" : ""}>
+            <div
+              key={i}
+              className={`cursor-pointer hover:bg-muted/50 ${currentLine === i + 1 ? "text-foreground font-bold" : ""}`}
+              onClick={() => setRequestSeekLine(i + 1)}
+            >
               {i + 1}
             </div>
           ))}

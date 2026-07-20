@@ -164,7 +164,6 @@ export const ConfigurationPanel = () => {
               <Button
                 onClick={handleMemoryControllerApply}
                 className="w-full mt-2"
-                variant="secondary"
                 size="sm"
               >
                 Apply Controller Config

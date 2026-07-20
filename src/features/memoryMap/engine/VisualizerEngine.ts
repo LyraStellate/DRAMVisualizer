@@ -263,17 +263,34 @@ export class VisualizerEngine {
     // Subarray and above (level < ROW_LEVEL) get border-only flash (encoded as negative intensity)
     const flashIntensity = level < ROW_LEVEL ? -match.intensity() : match.intensity();
 
+    let renderY = (rect.y - cam.centerY) * cam.scale;
+    let renderPxH = pxH;
+
+    if (level === ROW_LEVEL) {
+      // Shrink vertically to look like a pipe passing the column
+      const shrink = pxH * 0.15;
+      renderY += shrink;
+      renderPxH -= shrink * 2;
+    }
+
+    let borderPx = 0;
+    if (level < ROW_LEVEL) {
+      borderPx = Math.min(5, pxW * 0.04);
+    } else if (level === 6 && flashIntensity > 0.001) {
+      borderPx = 1.5; // Trigger darker border for Column flash
+    }
+
     // World → camera-relative CSS px happens here, at emit time, so the GPU
     // never sees absolute world coordinates (float32 precision strategy §5.2).
     this.writer.push(
       (rect.x - cam.centerX) * cam.scale,
-      (rect.y - cam.centerY) * cam.scale,
+      renderY,
       pxW,
-      pxH,
+      renderPxH,
       descend ? style.containerFill : style.flatFill,
       showBorder ? style.border : 0,
       showBorder ? 1 : 0,
-      level < ROW_LEVEL ? Math.min(5, pxW * 0.04) : 0,
+      borderPx,
       flashIntensity
     );
     if (pxW >= PX_LABEL && pxH >= 16 && level <= 4) {
