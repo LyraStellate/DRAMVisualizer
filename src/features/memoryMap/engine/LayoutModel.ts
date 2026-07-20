@@ -31,7 +31,7 @@ export interface PickResult {
   inGap: boolean;
 }
 
-export const ROOT_RECT: Rect = { x: 0, y: 0, w: 1000, h: 625 };
+const ROOT_RECT: Rect = { x: 0, y: 0, w: 1000, h: 625 };
 
 const PAD_FRAC = 0.04;
 const LABEL_FRAC = 0.06;
@@ -41,7 +41,7 @@ const ROW_LEVEL = 5;
 const COLUMN_LEVEL = 6;
 const BOTTOM_PAD_FRAC = PAD_FRAC;
 
-export function buildLayoutTable(counts: number[]): LayoutTable {
+function buildLayoutTable(counts: number[]): LayoutTable {
   const table: LayoutTable = [];
   // World-space aspect ratio of the current parent cell; the layout is
   // self-similar so it is fully determined level by level from the root.

@@ -5,15 +5,15 @@
 import { LevelLayout } from "./LayoutModel";
 
 /** Cells at least this wide/tall draw their children instead of a flat fill. */
-export const PX_DESCEND = 24;
+const PX_DESCEND = 24;
 /** Don't descend if the child pitch would be below this (parent fill aggregates). */
-export const PX_CHILD_MIN = 3;
+const PX_CHILD_MIN = 3;
 /** Cells at least this big get a border. */
 export const PX_BORDER = 8;
 /** Cells at least this wide get a text label. */
 export const PX_LABEL = 48;
 /** Hard cap on instances per frame (safety valve; walk stops descending). */
-export const INSTANCE_CAP = 200_000;
+const INSTANCE_CAP = 200_000;
 
 export function shouldDescend(
   pxW: number,

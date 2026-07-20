@@ -7,7 +7,7 @@ import { DecodedAccess } from "../../../shared/types/trace";
 
 export const CHUNK_SIZE = 4096;
 export const MAX_CACHED_CHUNKS = 8;
-export const PREFETCH_FRACTION = 0.75;
+const PREFETCH_FRACTION = 0.75;
 
 export type InvokeFn = <T>(
   cmd: string,

@@ -1,4 +1,4 @@
-export interface TraceParseError {
+interface TraceParseError {
   line: number;
   message: string;
 }

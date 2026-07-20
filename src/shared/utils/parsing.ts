@@ -49,37 +49,3 @@ export function parseDRAMTotalCapacity(sizeStr: string): ParseResult {
   return { value: bytes, error: null };
 }
 
-export function parseHexNumberToBytes(sizeStr: string): ParseResult {
-  if (!sizeStr.trim()) {
-    return { value: DEFAULT_VALUE, error: "Size input is empty" };
-  }
-  const cleanedStr = sizeStr.trim().toLowerCase();
-  let sizeBytes: number;
-  if (cleanedStr.startsWith("0x")) {
-    sizeBytes = parseInt(cleanedStr.substring(2), 16);
-  } else {
-    if (/^[0-9a-f]+$/.test(cleanedStr)) {
-      sizeBytes = parseInt(cleanedStr, 16);
-    } else {
-      return {
-        value: DEFAULT_VALUE,
-        error:
-          "Invalid hexadecimal size. Expected e.g., 0x1000 or 1000 (hex bytes).",
-      };
-    }
-  }
-  if (isNaN(sizeBytes) || sizeBytes <= 0 || !isFinite(sizeBytes)) {
-    return {
-      value: DEFAULT_VALUE,
-      error: "Invalid byte count from hex. Value must be a positive number.",
-    };
-  }
-  return { value: sizeBytes, error: null };
-}
-
-export function parseNbitMappingToPositions(mappingStr: string): number[] {
-  if (!mappingStr || !mappingStr.trim()) return [];
-  const positions = mappingStr.split(",").map((s) => parseInt(s.trim(), 10));
-  if (positions.some(isNaN)) return [];
-  return positions;
-}

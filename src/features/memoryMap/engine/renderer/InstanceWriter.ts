@@ -5,7 +5,7 @@
 //   4: fill RGBA (u8×4)     5: border RGBA (u8×4, alpha 0 = no border)
 //   6: borderPx  7: cornerPx  8: flash intensity (0..1)
 
-export const SLOTS_PER_INSTANCE = 9;
+const SLOTS_PER_INSTANCE = 9;
 export const STRIDE_BYTES = SLOTS_PER_INSTANCE * 4;
 
 /** Packs an RGBA color (0..255 each) for the u8-normalized GL attributes. */

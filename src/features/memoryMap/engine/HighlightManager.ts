@@ -9,7 +9,6 @@ export interface ActiveFlash {
 }
 
 export const MAX_FLASHES = 8;
-export const AFTERGLOW = 0.25; // deprecated, no longer used in new logic
 
 /**
  * Flash intensity at time `nowMs`.
